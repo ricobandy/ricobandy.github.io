@@ -8,7 +8,7 @@ permalink: /about/
 
 #### Hack The Box profile : [ricobandy](https://www.hackthebox.eu/profile/58846)
 #### Github : [ricobandy](https://github.com/ricobandy)
-#### Twitter : [@taCkiQ](https://www.twitter.com/taCkiQ)
+#### Twitter : [@taCkieQ](https://www.twitter.com/taCkieQ)
 
 <br>
 <hr>
