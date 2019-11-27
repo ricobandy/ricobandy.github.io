@@ -1,6 +1,7 @@
 title: ricobandy.github.io
 description: Posts about InfoSec and CTFs
-theme: jekyll-theme-hacker
+#theme: jekyll-theme-hacker
+remote_theme: "mmistakes/minimal-mistakes@4.17.2"
 
 # Site Author
 author:
