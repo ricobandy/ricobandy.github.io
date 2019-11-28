@@ -16,7 +16,7 @@ minimal_mistakes_skin    : "contrast" # "air", "aqua", "contrast", "dark", "dirt
 
 # Site Settings
 locale                   : "en-US"
-title                    : "ricobandy.github.io"
+title                    : "ricobandy hacks stuff"
 title_separator          : "-"
 subtitle                 : # site tagline that appears below site title in masthead
 name                     : "ricobandy"
@@ -130,6 +130,9 @@ author:
     - label: "Instagram"
       icon: "fab fa-fw fa-instagram"
       # url: "https://instagram.com/"
+    - label: "HackTheBox"
+      icon: "fab fa-fw fa-HackTheBox"
+      url: "/assets/icons/htb-favicon.png"
 
 # Site Footer
 footer:
