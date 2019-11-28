@@ -131,8 +131,8 @@ author:
       icon: "fab fa-fw fa-instagram"
       # url: "https://instagram.com/"
     - label: "HackTheBox"
-      icon: "fab fa-fw fa-HackTheBox"
-      url: "/assets/icons/htb-favicon.png"
+      icon: "/assets/icons/htb-favicon.png"
+      url: "https://www.hackthebox.eu/home/users/profile/58846"
 
 # Site Footer
 footer:
