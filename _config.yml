@@ -108,9 +108,9 @@ analytics:
 author:
   name             : "Charles Quaye"
   avatar           : "/assets/images/avatar.png"
-  bio              : "CISSP | eJPT | PenTest+"
+  bio              : "CISSP | PECB ISO 27001 LI | eJPT | PenTest+"
   location         : "West Coast Africa"
-  email            : 
+  email            :
   links:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
