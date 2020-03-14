@@ -1,7 +1,7 @@
 ---
 layout: single
 title: Postman - Hack The Box
-excerpt: "Postman was an easy straight forward box. It had realistic vulnerabilities which had CVEs about them. I had to write my ssh public keys into a redis user keys file and then connect to the server to obtain another private ssh keys which further leads to obtaining access to a Webmin application, vulnerable to a remote code execution to gain root access"
+excerpt: "Postman was an easy straight forward box. It had realistic vulnerabilities which had CVEs about them. I had to write my ssh public keys into a redis user authorized_keys file and then connect to the server to obtain another user Matt's private ssh keys which further leads to obtaining access to a Webmin application, vulnerable to a remote code execution to gain root access."
 date: 2020-03-13
 classes: wide
 header:
@@ -22,7 +22,7 @@ tags:
 
 ## Summary
 
-Postman was an easy straight forward box. It had realistic vulnerabilities which had CVEs about them. I had to write my ssh public keys into a redis user keys file and then connect to the server to obtain another private ssh keys which further leads to obtaining access to a Webmin application, vulnerable to a remote code execution to gain root access.
+Postman was an easy straight forward box. It had realistic vulnerabilities which had CVEs about them. I had to write my ssh public keys into a redis user authorized_keys file and then connect to the server to obtain another user Matt's private ssh keys which further leads to obtaining access to a Webmin application, vulnerable to a remote code execution to gain root access.
 
 ## Box Details
 
@@ -161,7 +161,7 @@ quit
 Connection closed by foreign host
 ```
 
-This proves that there isn't any authentication required. We can thus leaverage on this to get a remote code execution and get direct access to the server. To do this, we can generate SSH key and append the public key to the server and login using the private keys. More information can be found [here](https://packetstormsecurity.com/files/134200/Redis-Remote-Command-Execution.html).
+This proves that there isn't any authentication required. I can thus leaverage on this to get a remote code execution and get direct access to the server. To do this, I can generate SSH key and append the public key to the server and login using the private keys. More information can be found [here](https://packetstormsecurity.com/files/134200/Redis-Remote-Command-Execution.html).
 
 ### TCP Port 10000
 
@@ -173,7 +173,7 @@ From the nmap scan results, I can see the version of Webmin on the server is `1.
 
 ### Getting Shell as redis
 
-Having identified that the service is running unauthenticated and thus I will try to gain access by creating SSH keys and append the public keys to the user's authorized key file and then login with the private key. To do this, I need to find the location of the home directory of the service user account as well as the account name:
+Having identified that the service is running unauthenticated and thus I will try to gain access by creating SSH keys and append the public keys to the user's authorized_key file and then login with the private key. To do this, I need to find the location of the home directory of the service user account as well as the account name:
 
 ```
 $ redis-cli -h 10.10.10.160 -p 6379
@@ -243,7 +243,7 @@ cat: user.txt: Permission denied
 redis@Postman:/home/Matt$
 ```
 
-To further enumerate the system, I run the LinEnum.sh script to try to find any juicy stuffs to enable increase privileges on the system. I found a backup of a SSH private key, owned by Matt but readable by every user. I tried connecting to the server as Matt using this private key but it required a passphrase.
+To further enumerate the system, I run the LinEnum.sh script to try to find any juicy stuffs to enable me increase privileges on the system. I found a backup of a SSH private key, owned by Matt but readable by every user. I tried connecting to the server as Matt using this private key but it required a passphrase.
 
 ```
 [-] SSH keys/host information found in the following locations:
@@ -286,7 +286,7 @@ Enter passphrase for key 'matt_private.key':
 Enter passphrase for key 'matt_private.key':
 ```
 
-Only option now is to convert file to a hash using ssh2john and then use JohnTheRipper to crack the resulting hash. I was able to successfully crack the hash and retrieve the passphrase of `computer2008`
+I can generate a hash using ssh2john and then use JohnTheRipper to crack it. I was able to successfully crack the hash and retrieve the passphrase of `computer2008`
 
 ```
 $ /opt/JohnTheRipper/run/ssh2john.py matt_private.key > matt_hashes.txt
@@ -304,7 +304,7 @@ computer2008     (matt_private.key)
 Session completed
 ```
 
-I tried connection to the server using the SSH port as Matt but this failed as connect was closed whenever I tried connecting. Further checks revealed that user Matt is denied access through SSH on the server:
+I tried connecting to the server using the SSH port as Matt but this failed as the connection was closed whenever I tried connecting. Further checks revealed that user Matt is denied access through SSH on the server:
 
 ```
 $ ssh -i matt_private.key Matt@10.10.10.160
@@ -341,11 +341,11 @@ Matt@Postman:~$
 
 ### Matt to root
 
-Having access as Matt now, I run further linux enumeration script `LinEnum.sh` but nothing really popped out except noticing that the process for Webmin was running as user root. Thus based on my initial enumeration of the TCP port 10000 we could leverage this and gain access as root. As the Webmin vulnerability required authentication, it's possible Matt's access could be used on the Webmin application(think credential reuse). I tried using Matt's access and I successfully logged in. Therefore we can use this to gain root access using authenticated remote code execution.
+Having access as Matt now, I run the linux enumeration script `LinEnum.sh` for more enumeration but nothing really popped out except noticing that the process for Webmin was running as user root. Thus based on my initial enumeration of the TCP port 10000 we could leverage this and gain access as root. As the Webmin vulnerability required authentication, it's possible Matt's access could be used on the Webmin application(think credential reuse). I tried using Matt's access and I successfully logged in. Therefore I can use this to gain root access using authenticated remote code execution.
 
 ! [] (/assets/images/postman/tcp-10000-auth-login.png)
 
-Using searchspoilt, I found a module available in metasploit to exploit this Webmin vulnerability and used the module to gain access to the system as root:
+Using searchsploit, I found a module available in metasploit to exploit this Webmin vulnerability and used the module to gain access to the system as root:
 
 ```
 msf5 > use exploit/linux/http/webmin_packageup_rce
