@@ -26,7 +26,7 @@ Postman was an easy straight forward box. It had realistic vulnerabilities which
 
 ## Box Details
 
-![] (/assets/images/hackthebox/postman/postman-logo.png)
+![] (/assets/images/postman/postman-logo.png)
 
 ## Recon
 
@@ -343,7 +343,7 @@ Matt@Postman:~$
 
 Having access as Matt now, I run further linux enumeration script `LinEnum.sh` but nothing really popped out except noticing that the process for Webmin was running as user root. Thus based on my initial enumeration of the TCP port 10000 we could leverage this and gain access as root. As the Webmin vulnerability required authentication, it's possible Matt's access could be used on the Webmin application(think credential reuse). I tried using Matt's access and I successfully logged in. Therefore we can use this to gain root access using authenticated remote code execution.
 
-![] (/assets/images/hackthebox/postman/tcp-10000-auth-login.png)
+![] (/assets/images/postman/tcp-10000-auth-login.png)
 
 Using searchspoilt, I found a module available in metasploit to exploit this Webmin vulnerability and used the module to gain access to the system as root:
 
