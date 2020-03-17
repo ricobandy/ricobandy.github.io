@@ -1,14 +1,15 @@
 ---
 layout: single
 title: Metasploitable3 - Exploiting UnrealIRC Service
-date: 2019-11-18
+excerpt:
+date: 2020-03-18
 classes: wide
 header:
   teaser: /assets/images/metasplitable3/metasploit_logo.jpg
+  teaser_home_page: true
+  icon: /assets/images/hackthebox.png
 categories:
-  - irc
-  - infosec
-  - pentesting
+  - metasploitable3
 tags:
   - irc
   - linux
@@ -19,9 +20,7 @@ tags:
 
 ## Summary
 
-Metasploitable3 is a free virtual machine - either in a Linux or Windows version - that allows you to simulate attacks largely using metasploit. However, I will mainly avoid using metasploit and rather do it manually to further enhance my skillset.
-
-I will randomly pick a service to exploit so I can write multiple blogs in this metasploitable 3 series. In this blog, we will be exploiting UnrealIRC Service.
+Metasploitable3 is a free vulnerable machine - either in a Linux or Windows version - that allows you to simulate attacks largely using metasploit. However, I will mainly avoid using metasploit and rather do it manually to further enhance my skillset. I will randomly pick a service to exploit so I can write multiple blogs in this metasploitable 3 series. In this blog, we will be exploiting UnrealIRC Service.
 
 ## Box Details
 
@@ -231,7 +230,9 @@ boba_fett@metasploitable3-ub1404:/opt/unrealircd/Unreal3.2$
 
 ```
 
-## Privilege Escalation - From user account to root
+## Privilege Escalation
+
+### From boba_fett --> root
 
 In order to gain full root access, further recon is required to find ways in which we can further escalate our current privileges. I usually run the post exploitation scripts such as `LinEnum.sh` and `linux-smart-enumeration` script to help automate this stage. First, I need to transfer these scripts to the compromised server and executed them. I will setup a webserver on the attacker machine and use wget to download the files to a location so i can execute them
 
@@ -272,7 +273,7 @@ Saving to: 'lse.sh'
 
 2019-12-15 12:24:58 (20.2 MB/s) - 'lse.sh' saved [31736/31736]
 
-boba_fett@metasploitable3-ub1404:/var/tmp$ 
+boba_fett@metasploitable3-ub1404:/var/tmp$
 ```
 
 After running the enumeration scripts, are few things popped out for me:
