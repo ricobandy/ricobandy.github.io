@@ -5,9 +5,9 @@ excerpt: "Postman was an easy straight forward box. It had realistic vulnerabili
 date: 2020-03-13
 classes: wide
 header:
-  teaser: /assets/images/postman-logo.png
+  teaser: <img src="/assets/images/postman/postman-logo.png">
   teaser_home_page: true
-  icon: /assets/images/hackthebox.png
+  icon: <img src="/assets/images/hackthebox.png">
 categories:
   - hackthebox
 tags:
@@ -26,7 +26,7 @@ Postman was an easy straight forward box. It had realistic vulnerabilities which
 
 ## Box Details
 
-![] (/assets/images/postman-logo.png)
+<img src="/assets/images/postman/postman-logo.png">
 
 ## Recon
 
@@ -343,7 +343,7 @@ Matt@Postman:~$
 
 Having access as Matt now, I run the linux enumeration script `LinEnum.sh` for more enumeration but nothing really popped out except noticing that the process for Webmin was running as user root. Thus based on my initial enumeration of the TCP port 10000 we could leverage this and gain access as root. As the Webmin vulnerability required authentication, it's possible Matt's access could be used on the Webmin application(think credential reuse). I tried using Matt's access and I successfully logged in. Therefore I can use this to gain root access using authenticated remote code execution.
 
-![] (/assets/images/tcp-10000-auth-login.png)
+<img src="/assets/images/postman/tcp-10000-auth-login.png">
 
 Using searchsploit, I found a module available in metasploit to exploit this Webmin vulnerability and used the module to gain access to the system as root:
 
