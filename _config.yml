@@ -132,7 +132,7 @@ author:
       # url: "https://instagram.com/"
     - label: "HackTheBox"
       icon: "/assets/icons/htb-favicon.png"
-      url: "https://www.hackthebox.eu/home/users/profile/58846"
+      url: "https://www.hackthebox.eu/profile/58846"
 
 # Site Footer
 footer:
