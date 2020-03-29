@@ -116,6 +116,8 @@ I don't usually enumerate SSH ports unless I have credentials to test. I will le
 
 Enumerating the web page showed a landing page with a statement about the site being under construction. Further tests with `nikto` and directory bruteforcing using `dirsearch` did not give any interesting results.
 
+<img src="/assets/images/postman/tcp-80-screenshot.png">
+
 ```
 $ sudo python3 /opt/dirsearch/dirsearch.py -u 10.10.10.160 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -t 50 -e php,html -f --plain-text-report postman_brute.txt
 [sudo] password for cyb3r:
@@ -168,6 +170,8 @@ This proves that there isn't any authentication required. I can thus leaverage o
 Navigating to the web page served at `http://10.10.10.16`redirects to an https page and took me to a login page for Webmin deployment. Webmin is a web-based interface for system administration for Unix. Using any modern web browser, you can setup user accounts, Apache, DNS, file sharing and much more. Webmin removes the need to manually edit Unix configuration files like /etc/passwd, and lets you manage a system from the console or remotely. More information can be found [here](http://www.webmin.com/).
 
 From the nmap scan results, I can see the version of Webmin on the server is `1.910` which has [CVE](https://nvd.nist.gov/vuln/detail/CVE-2019-12840) for an authenticated remote code execution where any user authorized to the "Package Updates" module can execute arbitrary commands with root privileges via the data parameter to update.cgi. Thus I need credentials to login to the Webmin and hopefully exploit this vulnerability. However using default credentials as well as trying various SQLi did not work. I will come back to this service if I ever manage to get credentials.
+
+<img src="/assets/images/postman/tcp-10000-login.jpg>
 
 ## Gaining Access
 
