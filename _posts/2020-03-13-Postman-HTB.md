@@ -171,7 +171,7 @@ Navigating to the web page served at `http://10.10.10.16`redirects to an https p
 
 From the nmap scan results, I can see the version of Webmin on the server is `1.910` which has [CVE](https://nvd.nist.gov/vuln/detail/CVE-2019-12840) for an authenticated remote code execution where any user authorized to the "Package Updates" module can execute arbitrary commands with root privileges via the data parameter to update.cgi. Thus I need credentials to login to the Webmin and hopefully exploit this vulnerability. However using default credentials as well as trying various SQLi did not work. I will come back to this service if I ever manage to get credentials.
 
-<img src="/assets/images/postman/tcp-10000-login.jpg>
+<img src="/assets/images/postman/tcp-10000-login.jpg">
 
 ## Gaining Access
 
