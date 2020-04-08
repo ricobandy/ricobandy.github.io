@@ -22,7 +22,7 @@ tags:
 
 ## Box Details
 
-![] (/assets/images/)
+<img src="/assets/images/forest/forest-logo.png">
 
 ## Scanning
 
