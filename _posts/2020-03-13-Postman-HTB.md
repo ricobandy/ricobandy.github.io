@@ -148,7 +148,7 @@ Task Completed
 
 ### TCP Port 6379
 
-From the nmap printout, I could see that redis is running on this port. Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker. By default Redis binds to all the interfaces and has no authentication at all. The version of redis running on the server is 4.0.9. I can connect to verify if authentication is reuqired or not using telnet:
+From the nmap printout, I could see that redis is running on this port. Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker. By default Redis binds to all the interfaces and has no authentication at all. The version of redis running on the server is 4.0.9. I can connect to verify if authentication is required or not using telnet:
 
 ```
 $ telnet 10.10.10.160 6379
