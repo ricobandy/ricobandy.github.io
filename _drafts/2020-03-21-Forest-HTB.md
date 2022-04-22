@@ -15,7 +15,7 @@ tags:
   - AS-REP Roasting
   - Aclpwn
   - Bloodhound
-  - SHarphound
+  - Sharphound
 ---
 
 ## Summary
