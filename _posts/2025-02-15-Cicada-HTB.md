@@ -1,7 +1,7 @@
 ---
 layout: single
 title: Cicada - Hack The Box
-excerpt: ""
+excerpt: Cicada is a Windows AD box which required enumerating SMB shares multiple times with different users revealing different shares, leading to some juicy information to enable us exploit the box
 date: 2025-02-15
 classes: wide
 header:
