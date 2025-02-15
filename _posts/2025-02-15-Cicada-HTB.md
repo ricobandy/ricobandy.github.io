@@ -333,7 +333,7 @@ SMB         10.129.118.69   445    CICADA-DC        NETLOGON        READ        
 SMB         10.129.118.69   445    CICADA-DC        SYSVOL          READ            Logon server share 
 ```
 
-After spidering the DEV share, I found a script  "Backup_script.ps1"
+After spidering the DEV share, I found a script  `Backup_script.ps1`
 
 ```
 $ nxc smb 10.129.118.69 -u david.orelious -p 'aRt$Lp#7t*VQ!3' -M spider_plus 
@@ -375,7 +375,7 @@ SPIDER_PLUS 10.129.118.69   445    CICADA-DC        [*] File size max:        5.
             "mtime_epoch": "2024-08-28 12:28:22",
             "size": "601 B"
         }
-    },
+    }
 ```
 
 From the script we found another creds for user emily.oscars
